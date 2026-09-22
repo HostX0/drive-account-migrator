@@ -70,6 +70,13 @@ class SafetyTests(unittest.TestCase):
         maps,blocks,_,conflicts=recover(c)
         self.assertEqual(maps[a],b);self.assertIn(a,blocks);self.assertFalse(conflicts)
 
+    def test_nested_permission_and_uncertain_exceptions_never_retried(self):
+        sid='source_'+'s'*24
+        for reason in ('API_RESTRICTION_NO_RETRY','UNCERTAIN_COPY_OUTCOME_NO_RETRY',
+                       'PERMISSION_DENIED','RESTRICTED_FILE','CANNOT_COPY'):
+            _,blocked,_,_=recover({'older_run':{'batch':{'exceptions':[{'source_id':sid,'status':reason}]}}})
+            with self.subTest(reason=reason):self.assertIn(sid,blocked)
+
     def test_conflicting_maps_preserved(self):
         a,b,c='1'+'a'*25,'1'+'b'*25,'1'+'c'*25
         maps,_,_,conflicts=recover({'file_map':{a:b},'run_x':{'file_mappings':{a:c}}})

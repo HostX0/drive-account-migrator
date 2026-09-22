@@ -137,7 +137,7 @@ def recover(state):
                         add(source, target.get('destination_id'))
             if any(word in context for word in ('issue', 'exception')):
                 records.append(value)
-                if value.get('source_id') and re.search(r'BLOCK|UNSUPPORTED|UNRESOLVED|DO_NOT_RETRY', json.dumps(value), re.I):
+                if value.get('source_id') and re.search(r'BLOCK|UNSUPPORTED|UNRESOLVED|NO_RETRY|RESTRICTION|RESTRICTED|CANNOT_COPY|PERMISSION_DENIED', json.dumps(value), re.I):
                     blocked.add(value['source_id'])
             for key, item in value.items():
                 if key in {'blocked_source_ids', 'excluded_source_ids', 'unsupported_source_ids'} and isinstance(item, list):
