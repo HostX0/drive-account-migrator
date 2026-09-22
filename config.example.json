@@ -1,0 +1,10 @@
+{
+  "source_email": "source@example.test",
+  "destination_email": "destination@example.test",
+  "source_root_id": "SOURCE_ROOT_ID",
+  "destination_root_id": "DESTINATION_ROOT_ID",
+  "controller_id": "CONTROLLER_ID",
+  "state_dir": "~/.local/state/drive-account-migrator",
+  "share_source": false,
+  "blocked_source_ids": []
+}

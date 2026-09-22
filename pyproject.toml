@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "drive-account-migrator"
+version = "0.1.0"
+description = "Local Google Drive migration with optional sharing and separately verified cleanup"
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "MIT"}
+authors = [{name = "HostX0"}]
+dependencies = []
+
+[project.scripts]
+drive-account-migrator = "drive_migrator.__main__:main"
+
+[tool.setuptools.packages.find]
+include = ["drive_migrator*"]
+
+[tool.setuptools.package-data]
+drive_migrator = ["web/*.html", "web/*.css", "web/*.js"]
