@@ -172,9 +172,10 @@ def main(argv=None):
                 if quota['user']['emailAddress'].lower() != c.SRC_EMAIL:
                     raise c.SafetyStop('Authenticated account mismatch')
                 print(json.dumps(quota, indent=2))
-                path = c.BASE/'live-status.json'
-                if path.exists():
-                    print(path.read_text())
+                for name in ('live-status.json', 'cleanup-status.json'):
+                    path = c.BASE/name
+                    if path.exists():
+                        print(path.read_text())
         return 0
     except KeyboardInterrupt:
         print('Interrupted. Preserve the state directory; reconcile before retrying.', file=sys.stderr)

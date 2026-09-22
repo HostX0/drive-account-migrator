@@ -111,7 +111,7 @@ class LocalApp:
             return {'saved': True}
 
     def report(self, name):
-        if name not in ('plan', 'trash-plan', 'purge-plan', 'live-status'):
+        if name not in ('plan', 'trash-plan', 'purge-plan', 'live-status', 'cleanup-status'):
             raise ValueError('Unknown report.')
         path = self.state_dir()/(name+'.json')
         if not path.exists():

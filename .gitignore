@@ -30,3 +30,4 @@ private/
 build/
 dist/
 *.egg-info/
+cleanup-status.json

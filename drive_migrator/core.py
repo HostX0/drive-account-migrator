@@ -492,6 +492,8 @@ class Worker:
             _, blocked, _, conflicts = recover(state)
             self.blocked.update(blocked)
             self.blocked.update(conflicts)
+            if time.time() >= self.deadline or time.time() >= stamp(self.lease['expires_at']) - 60:
+                raise SafetyStop('Bounded run ended during controller read')
 
     def mapping(self, source, destination):
         if source in self.maps and self.maps[source] != destination:

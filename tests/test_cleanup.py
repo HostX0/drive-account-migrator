@@ -1,4 +1,7 @@
 import copy
+import contextlib
+import io
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -73,6 +76,19 @@ class CleanupTests(unittest.TestCase):
             with self.assertRaises(c.APIError):run.checkpoint()
             self.assertEqual(db.execute('SELECT state,journaled FROM actions').fetchone(),('verified',0))
             self.assertTrue(run.cleanup_deltas)
+            db.close()
+
+    def test_cleanup_report_does_not_claim_source_unchanged(self):
+        with tempfile.TemporaryDirectory() as folder, patch.object(c,'BASE',Path(folder)):
+            db=database();record(db,'s','trash','d','verified',{})
+            run=object.__new__(CleanupRun);run.cleanup_db=db;run.phase='trash'
+            run.run_id='test';run.lease_owned=False
+            with contextlib.redirect_stdout(io.StringIO()):run.publish('CLEANUP_BOUNDED_RUN_FINISHED')
+            report=json.loads((Path(folder)/'cleanup-status.json').read_text())
+            self.assertFalse(report['source_originals_unchanged'])
+            self.assertTrue(report['destination_copies_unchanged'])
+            self.assertEqual(report['counts'], {'verified':1})
+            self.assertFalse((Path(folder)/'live-status.json').exists())
             db.close()
 
     def test_gui_inputs_cannot_become_shell_commands(self):

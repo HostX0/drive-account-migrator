@@ -92,6 +92,18 @@ class SafetyTests(unittest.TestCase):
             d=copy.deepcopy(c);d[key]=val
             with self.assertRaises(SafetyStop):check_controller(d)
 
+    def test_deadline_rechecked_after_controller_read(self):
+        worker=object.__new__(Worker)
+        worker.lease_owned=True;worker.run_id='test';worker.deadline=time.time()+500
+        worker.lease={'run_id':'test','expires_at':'2099-01-01T00:00:00Z'};worker.blocked=set()
+        state={'source_email':SRC_EMAIL,'destination_email':DST_EMAIL,
+               'source_root_id':SRC_ROOT,'destination_root_id':DST_ROOT,'lease':worker.lease}
+        def slow_read():
+            worker.deadline=0
+            return {},state,'{}',[]
+        worker.read_controller=slow_read
+        with self.assertRaises(SafetyStop):worker.guard(remote=True)
+
     def test_mutation_allowlist(self):
         api=object.__new__(API);api.role='source'
         with self.assertRaises(SafetyStop):api.request('POST','drive/files')

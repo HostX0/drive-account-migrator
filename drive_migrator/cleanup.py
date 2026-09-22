@@ -169,6 +169,17 @@ class CleanupRun(c.Worker):
             for row in self.cleanup_db.execute('SELECT source,destination,phase,state FROM actions WHERE journaled=0')]
         self.allow_root_sharing = False
 
+    def publish(self, status, error=None):
+        counts = dict(self.cleanup_db.execute(
+            'SELECT state,count(*) FROM actions WHERE phase=? GROUP BY state', (self.phase,)))
+        value = {'run_id': self.run_id, 'status': status, 'phase': self.phase,
+                 'counts': counts, 'at': c.utc(), 'error': error,
+                 'lease_owned': self.lease_owned, 'source_originals_unchanged': False,
+                 'destination_copies_unchanged': True, 'controller_id': c.DOC,
+                 'source_root_id': c.SRC_ROOT, 'destination_root_id': c.DST_ROOT}
+        atomic_private(c.BASE/'cleanup-status.json', value)
+        print(json.dumps(value), flush=True)
+
     def checkpoint(self, status='RUNNING', release=False):
         doc, state, text, bodies = self.read_controller()
         if not state.get('lease') or state['lease'].get('run_id') != self.run_id:
@@ -185,6 +196,7 @@ class CleanupRun(c.Worker):
         self.cleanup_deltas.clear()
         if release:
             self.lease_owned = False
+        self.publish(status)
 
     def run(self):
         status, error, count = 'CLEANUP_CHECKPOINTED', None, 0
@@ -214,7 +226,8 @@ class CleanupRun(c.Worker):
                     row = self.cleanup_db.execute("SELECT detail FROM actions WHERE source=? AND phase='trash' AND state='verified'", (sid,)).fetchone()
                     if not row or json.loads(row[0])['source_after']['version'] != s['version']:
                         raise c.SafetyStop('No matching verified trash operation')
-                # Recheck source immediately before irreversible mutation.
+                # Refresh lease/stop state after ancestry reads, then recheck source.
+                self.guard(remote=True)
                 validate(self.source.get(sid), d, proof, permissions, self.phase)
                 record(self.cleanup_db, sid, self.phase, did, 'intent', {'at': c.utc()})
                 try:
@@ -255,7 +268,7 @@ class CleanupRun(c.Worker):
                     self.checkpoint(status, release=True)
                 except Exception as exception:
                     error = (error or '') + '; checkpoint/release failed: ' + type(exception).__name__
-            print(json.dumps({'status': status, 'verified_this_run': count, 'phase': self.phase, 'error': error}))
+            self.publish(status, error)
             self.cleanup_db.close()
             self.db.close()
         return 1 if error else 0
